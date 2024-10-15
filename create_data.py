@@ -7,12 +7,12 @@ random.seed(42)
 
 # Generate sample data for students
 students_data = {
-    'user_id': [f'ST{str(i).zfill(3)}' for i in range(1, 11)],  # 10 students
+    'user_id': [f'ST{str(i).zfill(3)}' for i in range(1, 15)],  # 14 students
     'first_name': ['Alice', 'Bob', 'Charlie', 'David', 'Eva',
-                   'Frank', 'Grace', 'Hannah', 'Ian', 'Jack'],
+                   'Frank', 'Grace', 'Hannah', 'Ian', 'Jack', 'Alexey', 'Anna', 'Max', 'Eugene'],
     'last_name': ['Smith', 'Johnson', 'Williams', 'Jones', 'Brown',
-                  'Davis', 'Miller', 'Wilson', 'Moore', 'Taylor'],
-    'user_email': [f'user{i}@example.com' for i in range(1, 11)]
+                  'Davis', 'Miller', 'Wilson', 'Moore', 'Taylor', 'Ivanov', 'Grace', 'Ford', 'Red'],
+    'user_email': [f'user{i}@example.com' for i in range(1, 15)]
 }
 
 students = pd.DataFrame(students_data)
@@ -56,10 +56,13 @@ attempts = adjust_attepmts()
 # Display the DataFrames
 print("Students DataFrame:")
 print(students)
+students.to_csv('students.csv', columns={'user_id', 'first_name', 'last_name', 'user_email'}, index=False)
 print("\nTasks DataFrame:")
 print(tasks)
+tasks.to_csv('tasks.csv',  columns={'task_id', 'task_name', 'module_name', 'course_name'}, index=False)
 print("\nAttempts DataFrame:")
 print(attempts)
+attempts.to_csv('attempts.csv', columns={'user_id', 'task_id', 'attempt_number', 'attempt_status'}, index=False)
 # print("\nCheck Attempts DataFrame:")
 # print(attempts[attempts['task_id'] == 'TK005'])
 # print("\nCheck Students DataFrame:")
@@ -76,13 +79,14 @@ group by s.user_id, task_id
 having (not array_contains(array_agg(attempt_status), 'success') and length(array_agg(attempt_status)) > 3)
 )
 
-select user_id as student, array_agg(task_id) as hard_tasks_for_student, array_agg(attempt_statuses) as attempt_statuses_for_student_on_hard_tasks
+select user_id as student, array_agg(task_id) as hard_tasks_for_student
 from user_task_attempts
 group by user_id
 order by user_id
 '''
 result = duckdb.query(query_1).to_df()
 print(result)
+result.to_csv('attention_to_this_students.csv', columns = {'student', 'hard_tasks_for_student'}, index=False)
 
 query_2 = '''
 with task_complexity as (
@@ -116,4 +120,4 @@ ORDER BY
 
 result = duckdb.query(query_2).to_df()
 print(result)
-
+result.to_csv('very_complex_tasks.csv', columns = {'course_uid', 'task', 'rank', 'complexity'}, index=False)

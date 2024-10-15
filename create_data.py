@@ -60,10 +60,10 @@ print("\nTasks DataFrame:")
 print(tasks)
 print("\nAttempts DataFrame:")
 print(attempts)
-print("\nCheck Attempts DataFrame:")
-print(attempts[attempts['task_id'] == 'TK005'])
-print("\nCheck Students DataFrame:")
-print(attempts[attempts['user_id'] == 'ST003'])
+# print("\nCheck Attempts DataFrame:")
+# print(attempts[attempts['task_id'] == 'TK005'])
+# print("\nCheck Students DataFrame:")
+# print(attempts[attempts['user_id'] == 'ST003'])
 
 query_1 =  '''
 with user_task_attempts as (

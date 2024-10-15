@@ -76,20 +76,25 @@ P(B|C) = \frac{0.8\cdot 0.4}{0.7\cdot 0.6 + 0.8\cdot 0.4} = \frac{32}{74} = \fra
 
 1. Аггрегируем статусы попыток для которых их номер не превосходит 4 в массив и смотрим на его элементы. Первый запрос:
 ```sql
-with user_task_attempts as (
-select s.user_id, task_id, array_agg(attempt_status) as attempt_statuses
-from students as s
-left join attempts as a
-on s.user_id = a.user_id
-where attempt_number < 5
-group by s.user_id, task_id
-having (not array_contains(array_agg(attempt_status), 'success') and length(array_agg(attempt_status)) > 3)
+WITH user_task_attempts as (
+SELECT
+    s.user_id,
+    task_id,
+    array_agg(attempt_status) as attempt_statuses
+FROM students as s
+LEFT JOIN attempts as a
+ON s.user_id = a.user_id
+WHERE attempt_number < 5
+GROUP BY s.user_id, task_id
+HAVING (not array_contains(array_agg(attempt_status), 'success') and length(array_agg(attempt_status)) > 3)
 )
 
-select user_id as student, array_agg(task_id) as hard_tasks_for_student, array_agg(attempt_statuses) as attempt_statuses_for_student_on_hard_task
-from user_task_attempts
-group by user_id
-order by user_id
+SELECT
+    user_id as student,
+    array_agg(task_id) as hard_tasks_for_student
+FROM user_task_attempts
+GROUP BY user_id
+ORDER BY user_id
 ```
 
 2. Определяем сложность как количество попыток до первого успеха по всем пользователям для этой задачи, если задача так и не была никем решена определяем сложность как 100. Дальше ранжируем по убыванию сложности группируя по названию модуля + название курса. Второй запрос: 
@@ -124,3 +129,17 @@ WHERE
 ORDER BY
     course_uid, rank;
 ```
+
+## Task 3
+
+Наши студенты учатся когортами - небольшими группами. В процессе они общаются друг с другом и с нашими сотрудниками: кураторами, наставниками и ревьюерами.
+
+Куратор делает всё, чтобы каждый поступивший к нам студент смог добраться до конца обучения. Его работа начинается с момента оплаты обучения человеком и до получения диплома. То есть сначала он формирует список людей на зачисление и убеждается, что все смогли начать обучение. В процессе следит за отстающими и отрабатывает проблемы студентов. А заканчивает работать с когортой только после того, как все дошедшие до конца получили дипломы.
+
+Разработайте дашборд для куратора, который он мог бы на ежедневной основе использовать для организации своей работы.
+
+Дашборд можно сделать в Excel, GoogleSheets, DataLens или Tableau. Не забудьте выдать доступ по ссылке к получившемуся дашборду
+
+### Solution
+
+Ссылка на дэшборд: https://datalens.yandex.cloud/0a76ph9e75een

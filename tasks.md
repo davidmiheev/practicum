@@ -21,7 +21,7 @@ P(C) = P(C|A)P(A) + P(C|B)P(B)
 ```math
 P(B|C) = \frac{P(C|B)\cdot P(B)}{P(C|A)P(A) + P(C|B)P(B)}
 ```
-По этой вычисляем ответ 
+По этой формуле вычисляем ответ:
 ```math
 P(B|C) = \frac{0.8\cdot 0.4}{0.7\cdot 0.6 + 0.8\cdot 0.4} = \frac{32}{74} = \frac{16}{37}
 ```
@@ -97,7 +97,8 @@ GROUP BY user_id
 ORDER BY user_id
 ```
 
-2. Определяем сложность как количество попыток до первого успеха по всем пользователям для этой задачи, если задача так и не была никем решена определяем сложность как 100. Дальше ранжируем по убыванию сложности группируя по названию модуля + название курса. Второй запрос: 
+2. Определяем сложность как среднее количество попыток до первого успеха по всем пользователям для этой задачи, если задача так и не была никем решена определяем сложность как 10 (считаем что максимальное количество попыток по задаче 10). Дальше ранжируем по убыванию сложности группируя по названию модуля + название курса.
+Запрос для вывода наиболее сложных задач:
 ```sql
 WITH task_complexity_per_user as (
 SELECT task_id, user_id, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
@@ -132,6 +133,41 @@ WHERE
 ORDER BY
     course_uid, rank;
 ```
+Запрос для вывода наиболее простых задач: 
+```sql
+WITH task_complexity_per_user as (
+SELECT task_id, user_id, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
+FROM attempts as a
+GROUP BY task_id, user_id
+),
+task_complexity as (
+SELECT task_id, avg(complexity_for_user) as complexity
+FROM task_complexity_per_user
+GROUP BY task_id
+),
+ranked_tasks as (
+SELECT
+  module_name || '_' || course_name as course_uid,
+  t.task_id,
+  complexity,
+  DENSE_RANK() OVER (PARTITION BY module_name || '_' || course_name ORDER BY complexity ASC) AS rank,
+  COUNT(*) OVER (PARTITION BY module_name || '_' || course_name) AS total_count
+FROM tasks as t
+LEFT JOIN task_complexity as tc
+ON t.task_id = tc.task_id
+)
+SELECT
+    course_uid,
+    task_id as task,
+    rank,
+    complexity
+FROM
+  ranked_tasks
+WHERE
+    rank <= total_count * 0.05
+ORDER BY
+    course_uid, rank;
+```
 
 ## Task 3
 
@@ -145,4 +181,4 @@ ORDER BY
 
 ### Solution
 
-Ссылка на дэшборд: https://datalens.yandex.cloud/0a76ph9e75een
+- **Ссылка на дэшборд: https://datalens.yandex.cloud/0a76ph9e75een (На дэшборде есть 2 таба: Users and Tasks)**

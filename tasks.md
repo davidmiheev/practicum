@@ -99,11 +99,14 @@ ORDER BY user_id
 
 2. Определяем сложность как количество попыток до первого успеха по всем пользователям для этой задачи, если задача так и не была никем решена определяем сложность как 100. Дальше ранжируем по убыванию сложности группируя по названию модуля + название курса. Второй запрос: 
 ```sql
-WITH task_complexity as (
-SELECT
-    task_id,
-    min(if(attempt_status = 'success', attempt_number, 100)) as complexity
+WITH task_complexity_per_user as (
+SELECT task_id, user_id, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
 FROM attempts as a
+GROUP BY task_id, user_id
+),
+task_complexity as (
+SELECT task_id, avg(complexity_for_user) as complexity
+FROM task_complexity_per_user
 GROUP BY task_id
 ),
 ranked_tasks as (
@@ -111,7 +114,7 @@ SELECT
   module_name || '_' || course_name as course_uid,
   t.task_id,
   complexity,
-  ROW_NUMBER() OVER (PARTITION BY module_name || '_' || course_name ORDER BY complexity DESC) AS rank,
+  DENSE_RANK() OVER (PARTITION BY module_name || '_' || course_name ORDER BY complexity DESC) AS rank,
   COUNT(*) OVER (PARTITION BY module_name || '_' || course_name) AS total_count
 FROM tasks as t
 LEFT JOIN task_complexity as tc

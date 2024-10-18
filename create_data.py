@@ -1,5 +1,6 @@
 import duckdb
 import pandas as pd
+import numpy as np
 import random
 
 # Set a random seed for reproducibility
@@ -22,7 +23,8 @@ tasks_data = {
     'task_id': [f'TK{str(i).zfill(3)}' for i in range(1, 151)],  # 150 tasks
     'task_name': [f'Task {i}' for i in range(1, 151)],
     'module_name': [f'Module {random.randint(1, 2)}' for _ in range(150)],
-    'course_name': [f'Course {random.randint(1, 3)}' for _ in range(150)]
+    'course_name': [f'Course {random.randint(1, 3)}' for _ in range(150)],
+    'student_feedback': [min(np.random.normal(8, 2), 10) for _ in range(150)]
 }
 
 tasks = pd.DataFrame(tasks_data)
@@ -56,16 +58,30 @@ def adjust_attepmts():
 
 attempts = adjust_attepmts()
 
+course_data = {
+    'user_id': [f'ST{str(i).zfill(3)}' for i in range(1, 15)] * 6,
+    'module_name': ['Module 1'] * 14 * 3 + ['Module 2'] * 14 * 3,
+    'course_name': (['Course 1'] * 14 + ['Course 2'] * 14 + ['Course 3'] * 14) * 2,
+    'progress': [min(np.random.normal(0.8, 0.2), 1) for _ in range(14 * 6)],
+    'involvement': [min(np.random.normal(0.7, 0.1), 1) for _ in range(14 * 6)],
+    'feedback': [min(np.random.normal(7, 2), 10) for _ in range(14 * 6)]
+}
+
+courses = pd.DataFrame(course_data)
+
 # Display the DataFrames
 print("Students DataFrame:")
 print(students)
 students.to_csv('students.csv', columns={'user_id', 'first_name', 'last_name', 'user_email'}, index=False)
 print("\nTasks DataFrame:")
 print(tasks)
-tasks.to_csv('tasks.csv', columns={'task_id', 'task_name', 'module_name', 'course_name'}, index=False)
+tasks.to_csv('tasks.csv', columns={'task_id', 'task_name', 'module_name', 'course_name', 'student_feedback'}, index=False)
 print("\nAttempts DataFrame:")
 print(attempts)
 attempts.to_csv('attempts.csv', columns={'user_id', 'task_id', 'attempt_number', 'attempt_status'}, index=False)
+print("\nCourses DataFrame:")
+print(courses)
+courses.to_csv('courses.csv', columns={'user_id', 'module_name', 'course_name', 'progress', 'involvement', 'feedback'}, index=False)
 # print("\nCheck Attempts DataFrame:")
 # print(attempts[attempts['task_id'] == 'TK005'])
 # print("\nCheck Students DataFrame:")
@@ -80,18 +96,38 @@ on s.user_id = a.user_id
 where attempt_number < 5
 group by s.user_id, task_id
 having (not array_contains(array_agg(attempt_status), 'success') and length(array_agg(attempt_status)) > 3)
+),
+student_who_struggles_w_task as (
+select first_name || ' ' || last_name as student_name, task_id, 'student struggles with task in this course' as reason
+from user_task_attempts as ta
+left join students as s
+on ta.user_id = s.user_id
 )
 
-select user_id as student, array_agg(task_id) as hard_tasks_for_student
-from user_task_attempts
-group by user_id
-order by user_id
+select student_name, module_name, course_name, task_name, reason
+from student_who_struggles_w_task as st
+left join tasks as t
+on st.task_id = t.task_id
+order by student_name
+
 '''
 result = duckdb.query(query_1).to_df()
 print(result)
-result.to_csv('attention_to_this_students.csv', columns = {'student', 'hard_tasks_for_student'}, index=False)
+result.to_csv('attention_to_this_students_1.csv', columns = {'student_name', 'module_name', 'course_name', 'task_name', 'reason'}, index=False)
 
 query_2 = '''
+select first_name || ' ' || last_name as student_name, module_name, course_name, involvement, 'low involvement in course discussions and activities' as reason
+from courses as c
+left join students as s
+on c.user_id = s.user_id
+where involvement < 0.65
+order by student_name
+'''
+result = duckdb.query(query_2).to_df()
+print(result)
+result.to_csv('attention_to_this_students_2.csv', columns = {'student_name', 'module_name', 'course_name', 'involvement', 'reason'}, index=False)
+
+query_3 = '''
 with task_complexity_per_user as (
 select task_id, user_id, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
 from attempts as a
@@ -126,11 +162,11 @@ ORDER BY
     course_uid, rank;
 '''
 
-result = duckdb.query(query_2).to_df()
+result = duckdb.query(query_3).to_df()
 print(result)
 result.to_csv('very_complex_tasks.csv', columns = {'course_uid', 'task', 'rank', 'complexity'}, index=False)
 
-query_3 = '''
+query_4 = '''
 with task_complexity_per_user as (
 select task_id, user_id, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
 from attempts as a
@@ -165,11 +201,11 @@ ORDER BY
     course_uid, rank;
 '''
 
-result = duckdb.query(query_3).to_df()
+result = duckdb.query(query_4).to_df()
 print(result)
 result.to_csv('very_easy_tasks.csv', columns = {'course_uid', 'task', 'rank', 'complexity'}, index=False)
 
-query_4 = '''
+query_5 = '''
 with a as (
 select
     s.user_id as user_id,
@@ -198,12 +234,12 @@ from a
 right join tasks as t
 on a.task_id = t.task_id
 '''
-result = duckdb.query(query_4).to_df()
+result = duckdb.query(query_5).to_df()
 print(result)
 result.to_csv('joined_data.csv', columns = {'user_id', 'first_name', 'last_name', 'user_email', 'task_id', 'task_name', 'module_name', 'course_name', 'attempt_number', 'attempt_status'}, index=False)
 
 
-query_5 = '''
+query_6 = '''
 with task_complexity_per_user as (
 select task_id, s.user_id as user_id, first_name || ' ' || last_name as user_name, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
 from attempts as a
@@ -217,6 +253,6 @@ right join tasks as t
 on tc.task_id = t.task_id
 '''
 
-result = duckdb.query(query_5).to_df()
+result = duckdb.query(query_6).to_df()
 print(result)
 result.to_csv('student_performance.csv', columns = {'user_name', 'module_name', 'course_name', 'task_name', 'complexity_for_user'}, index=False)

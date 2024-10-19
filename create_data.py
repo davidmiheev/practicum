@@ -69,6 +69,31 @@ course_data = {
 
 courses = pd.DataFrame(course_data)
 
+message_examples = [
+    'Help me to schedule the meeting with mentor',
+    'I need some clarification about score that I`ve got from reviewer',
+    'I want to discuss details on some problem from this course',
+    'Can I ask about change of deadline in this course?',
+    'Can I propose improvement in this course?',
+    'I want to discuss specific question with mentor',
+    'I want more elaborated feedback from mentors and reviewers',
+    'I think that tasks in this course are required update because of last changes in considered technology',
+    'Why do you requre implement task in this course in C++? (I prefer Python)',
+    'Can you add more advanced materials in this course?',
+    'Can you clarify process of review in this course?'
+
+]
+
+communication_data = {
+    'user_id': [random.choice(students['user_id']) for _ in range(102)], # 102 enquiries from students
+    'module_name': [random.choice(['Module 1', 'Module 2']) for _ in range(102)],
+    'course_name': [random.choice(['Course 1', 'Course 2', 'Course 3']) for _ in range(102)],
+    'message': [random.choice(message_examples) for _ in range(102)]
+}
+
+communication = pd.DataFrame(communication_data)
+
+
 # Display the DataFrames
 print("Students DataFrame:")
 print(students)
@@ -82,6 +107,9 @@ attempts.to_csv('attempts.csv', columns={'user_id', 'task_id', 'attempt_number',
 print("\nCourses DataFrame:")
 print(courses)
 courses.to_csv('courses.csv', columns={'user_id', 'module_name', 'course_name', 'progress', 'involvement', 'feedback'}, index=False)
+print("\nComminication Log:")
+print(communication)
+communication.to_csv('communication_log.csv', columns={'user_id', 'module_name', 'course_name', 'message'}, index=False)
 # print("\nCheck Attempts DataFrame:")
 # print(attempts[attempts['task_id'] == 'TK005'])
 # print("\nCheck Students DataFrame:")

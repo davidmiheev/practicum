@@ -69,6 +69,19 @@ course_data = {
 
 courses = pd.DataFrame(course_data)
 
+# add users' progress over time data
+
+progress_data = {
+    'user_id': [f'ST{str(i).zfill(3)}' for i in range(1, 15)] * 6 * 4,
+    'module_name': ['Module 1'] * 14 * 3 * 4 + ['Module 2'] * 14 * 3 * 4,
+    'course_name': (['Course 1'] * 14 * 4 + ['Course 2'] * 14 * 4 + ['Course 3'] * 14 * 4) * 2,
+    'timestamp': (['Week 1'] * 14 + ['Week 2'] * 14  + ['Week 3'] * 14 + ['Week 4'] * 14) * 6,
+    'progress_delta': [max(np.random.normal(0.15, 0.08), 0) for _ in range(14 * 6 * 4)]
+}
+
+progress = pd.DataFrame(progress_data)
+
+
 message_examples = [
     'Help me to schedule the meeting with mentor',
     'I need some clarification about score that I`ve got from reviewer',
@@ -110,6 +123,9 @@ courses.to_csv('courses.csv', columns={'user_id', 'module_name', 'course_name', 
 print("\nComminication Log:")
 print(communication)
 communication.to_csv('communication_log.csv', columns={'user_id', 'module_name', 'course_name', 'message'}, index=False)
+print("\nProgress DataFrame:")
+print(progress)
+# progress.to_csv('progress.csv', index=False)
 # print("\nCheck Attempts DataFrame:")
 # print(attempts[attempts['task_id'] == 'TK005'])
 # print("\nCheck Students DataFrame:")
@@ -284,3 +300,22 @@ on tc.task_id = t.task_id
 result = duckdb.query(query_6).to_df()
 print(result)
 result.to_csv('student_performance.csv', columns = {'user_name', 'module_name', 'course_name', 'task_name', 'complexity_for_user'}, index=False)
+
+query_7 = '''
+with integral as (
+select
+    module_name,
+    course_name,
+    timestamp,
+    user_id,
+    sum(progress_delta) over (partition by module_name || course_name || user_id order by module_name || course_name || timestamp ASC) as progress
+from progress
+order by module_name, course_name, timestamp, user_id
+)
+select *
+from integral
+'''
+
+result = duckdb.query(query_7).to_df()
+print(result)
+result.to_csv('progress.csv', index=False)

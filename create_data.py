@@ -81,6 +81,16 @@ progress_data = {
 
 progress = pd.DataFrame(progress_data)
 
+сommunication_w_mentors_data = {
+    'user_id': [f'ST{str(i).zfill(3)}' for i in range(1, 15)] * 6 * 4,
+    'module_name': ['Module 1'] * 14 * 3 * 4 + ['Module 2'] * 14 * 3 * 4,
+    'course_name': (['Course 1'] * 14 * 4 + ['Course 2'] * 14 * 4 + ['Course 3'] * 14 * 4) * 2,
+    'timestamp': (['Week 1'] * 14 + ['Week 2'] * 14  + ['Week 3'] * 14 + ['Week 4'] * 14) * 6,
+    'communication_freq': [int(max(np.random.normal(4, 2), 0)) for _ in range(14 * 6 * 4)]
+}
+
+сommunication_w_mentors = pd.DataFrame(сommunication_w_mentors_data)
+
 
 message_examples = [
     'Help me to schedule the meeting with mentor',
@@ -125,6 +135,9 @@ print(communication)
 communication.to_csv('communication_log.csv', columns={'user_id', 'module_name', 'course_name', 'message'}, index=False)
 print("\nProgress DataFrame:")
 print(progress)
+print("\nCommunication w Mentors DataFrame:")
+print(сommunication_w_mentors)
+сommunication_w_mentors.to_csv('сommunication_w_mentors.csv', index=False)
 # progress.to_csv('progress.csv', index=False)
 # print("\nCheck Attempts DataFrame:")
 # print(attempts[attempts['task_id'] == 'TK005'])

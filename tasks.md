@@ -101,14 +101,14 @@ ORDER BY user_id
 Запрос для вывода наиболее сложных задач:
 ```sql
 WITH task_complexity_per_user as (
-SELECT task_id, user_id, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
-FROM attempts as a
-GROUP BY task_id, user_id
+    SELECT task_id, user_id, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
+    FROM attempts as a
+    GROUP BY task_id, user_id
 ),
 task_complexity as (
-SELECT task_id, avg(complexity_for_user) as complexity
-FROM task_complexity_per_user
-GROUP BY task_id
+    SELECT task_id, avg(complexity_for_user) as complexity
+    FROM task_complexity_per_user
+    GROUP BY task_id
 ),
 ranked_tasks as (
 SELECT
@@ -116,7 +116,7 @@ SELECT
   t.task_id,
   complexity,
   DENSE_RANK() OVER (PARTITION BY module_name || '_' || course_name ORDER BY complexity DESC) AS rank,
-  COUNT(*) OVER (PARTITION BY module_name || '_' || course_name) AS total_count
+  COUNT(DISTINCT complexity) OVER (PARTITION BY module_name || '_' || course_name) AS total_count
 FROM tasks as t
 LEFT JOIN task_complexity as tc
 ON t.task_id = tc.task_id
@@ -136,14 +136,14 @@ ORDER BY
 Запрос для вывода наиболее простых задач:
 ```sql
 WITH task_complexity_per_user as (
-SELECT task_id, user_id, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
-FROM attempts as a
-GROUP BY task_id, user_id
+    SELECT task_id, user_id, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
+    FROM attempts as a
+    GROUP BY task_id, user_id
 ),
 task_complexity as (
-SELECT task_id, avg(complexity_for_user) as complexity
-FROM task_complexity_per_user
-GROUP BY task_id
+    SELECT task_id, avg(complexity_for_user) as complexity
+    FROM task_complexity_per_user
+    GROUP BY task_id
 ),
 ranked_tasks as (
 SELECT
@@ -151,7 +151,7 @@ SELECT
   t.task_id,
   complexity,
   DENSE_RANK() OVER (PARTITION BY module_name || '_' || course_name ORDER BY complexity ASC) AS rank,
-  COUNT(*) OVER (PARTITION BY module_name || '_' || course_name) AS total_count
+  COUNT(DISTINCT complexity) OVER (PARTITION BY module_name || '_' || course_name) AS total_count
 FROM tasks as t
 LEFT JOIN task_complexity as tc
 ON t.task_id = tc.task_id
@@ -172,23 +172,23 @@ ORDER BY
 Один запрос, который позволяет получить топ сложных и топ лёгких задач одновременно (если task_type = 'very hard', то это задача из топа сложных, а если task_type = 'very easy', то это задача из топа лёгких):
 ```sql
 WITH task_complexity_per_user as (
-SELECT task_id, user_id, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
-FROM attempts as a
-GROUP BY task_id, user_id
+    SELECT task_id, user_id, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
+    FROM attempts as a
+    GROUP BY task_id, user_id
 ),
 task_complexity as (
-SELECT task_id, avg(complexity_for_user) as complexity
-FROM task_complexity_per_user
-GROUP BY task_id
+    SELECT task_id, avg(complexity_for_user) as complexity
+    FROM task_complexity_per_user
+    GROUP BY task_id
 ),
 ranked_tasks as (
 SELECT
   module_name || '_' || course_name as course_uid,
   t.task_id,
   complexity,
-  if(rank <= total_count * 0.05, 'very hard', 'very easy') as task_type
   DENSE_RANK() OVER (PARTITION BY module_name || '_' || course_name ORDER BY complexity DESC) AS rank,
-  COUNT(*) OVER (PARTITION BY module_name || '_' || course_name) AS total_count
+  COUNT(DISTINCT complexity) OVER (PARTITION BY module_name || '_' || course_name) AS total_count,
+  if(rank <= total_count * 0.05, 'very hard', 'very easy') as task_type
 FROM tasks as t
 LEFT JOIN task_complexity as tc
 ON t.task_id = tc.task_id

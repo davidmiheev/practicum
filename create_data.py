@@ -332,3 +332,43 @@ from integral
 result = duckdb.query(query_7).to_df()
 print(result)
 result.to_csv('progress.csv', index=False)
+
+query_8 = '''
+WITH task_complexity_per_user as (
+SELECT task_id, user_id, min(if(attempt_status = 'success', attempt_number, 10)) as complexity_for_user
+FROM attempts as a
+GROUP BY task_id, user_id
+),
+task_complexity as (
+SELECT task_id, avg(complexity_for_user) as complexity
+FROM task_complexity_per_user
+GROUP BY task_id
+),
+ranked_tasks as (
+SELECT
+  module_name || '_' || course_name as course_uid,
+  t.task_id,
+  complexity,
+  DENSE_RANK() OVER (PARTITION BY module_name || '_' || course_name ORDER BY complexity DESC) AS rank,
+  COUNT(distinct complexity) OVER (PARTITION BY module_name || '_' || course_name) AS total_count,
+  if(rank <= total_count * 0.05, 'very hard', 'very easy') as task_type
+FROM tasks as t
+LEFT JOIN task_complexity as tc
+ON t.task_id = tc.task_id
+)
+SELECT
+    course_uid,
+    task_id as task,
+    task_type,
+    rank,
+    complexity
+FROM
+  ranked_tasks
+WHERE
+    rank <= total_count * 0.05 or rank >= total_count * 0.95
+ORDER BY
+    course_uid, rank;
+'''
+
+result = duckdb.query(query_8).to_df()
+print(result)

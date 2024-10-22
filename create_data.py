@@ -201,7 +201,7 @@ select
   t.task_id,
   complexity,
   DENSE_RANK() OVER (PARTITION BY module_name || '_' || course_name ORDER BY complexity DESC) AS rank,
-  COUNT(*) OVER (PARTITION BY module_name || '_' || course_name) AS total_count
+  COUNT(distinct complexity) OVER (PARTITION BY module_name || '_' || course_name) AS total_count
 FROM tasks as t
 left join task_complexity as tc
 on t.task_id = tc.task_id
@@ -240,7 +240,7 @@ select
   t.task_id,
   complexity,
   DENSE_RANK() OVER (PARTITION BY module_name || '_' || course_name ORDER BY complexity ASC) AS rank,
-  COUNT(*) OVER (PARTITION BY module_name || '_' || course_name) AS total_count
+  COUNT(distinct complexity) OVER (PARTITION BY module_name || '_' || course_name) AS total_count
 FROM tasks as t
 left join task_complexity as tc
 on t.task_id = tc.task_id

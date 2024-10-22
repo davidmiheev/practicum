@@ -77,18 +77,17 @@ P(B|C) = \frac{0.8\cdot 0.4}{0.7\cdot 0.6 + 0.8\cdot 0.4} = \frac{32}{74} = \fra
 1. Аггрегируем статусы попыток для которых их номер не превосходит 4 в массив и смотрим на его элементы. Первый запрос:
 ```sql
 WITH user_task_attempts as (
-SELECT
-    s.user_id,
-    task_id,
-    array_agg(attempt_status) as attempt_statuses
-FROM students as s
-LEFT JOIN attempts as a
-ON s.user_id = a.user_id
-WHERE attempt_number < 5
-GROUP BY s.user_id, task_id
-HAVING (not array_contains(array_agg(attempt_status), 'success') and length(array_agg(attempt_status)) > 3)
+    SELECT
+        s.user_id,
+        task_id,
+        array_agg(attempt_status) as attempt_statuses
+    FROM students as s
+    LEFT JOIN attempts as a
+    ON s.user_id = a.user_id
+    WHERE attempt_number < 5
+    GROUP BY s.user_id, task_id
+    HAVING (not array_contains(array_agg(attempt_status), 'success') and length(array_agg(attempt_status)) > 3)
 )
-
 SELECT
     user_id as student,
     array_agg(task_id) as hard_tasks_for_student
